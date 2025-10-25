@@ -1,29 +1,27 @@
-import OpenAI from 'openai';
+// --- MODIFICADO: Trocado 'import' por 'require' ---
+const { OpenAI } = require('openai');
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
-export default async function handler(request, response) {
+// --- MODIFICADO: Trocado 'export default' por 'module.exports' ---
+module.exports = async function handler(request, response) {
     try {
         if (request.method !== 'POST') {
             return response.status(405).json({ error: 'Method Not Allowed' });
         }
 
-        // --- MODIFICADO: Recebendo o 'contexto' do frontend ---
         const { image, contexto } = request.body;
         if (!image) {
             return response.status(400).json({ error: 'A imagem é obrigatória.' });
         }
 
-        // --- MODIFICADO: PROMPT ATUALIZADO PARA USAR O CONTEXTO ---
         let promptText = `
         Você é um geólogo especialista e avaliador de gemas. Sua tarefa é analisar a imagem fornecida e identificar a pedra ou mineral.
 
-        // --- INÍCIO DA MODIFICAÇÃO DO PROMPT ---
         O usuário forneceu as seguintes informações de CONTEXTO (use isso para ajudar na identificação):
         "${contexto || 'Nenhuma informação de contexto foi fornecida.'}"
-        // --- FIM DA MODIFICAÇÃO DO PROMPT ---
 
         Responda estritamente como um único objeto JSON. O objeto deve conter uma chave "identification", que é um objeto com a seguinte estrutura:
         {
@@ -37,8 +35,6 @@ export default async function handler(request, response) {
         Se você não conseguir identificar a pedra, mesmo com o contexto, retorne um JSON com a chave "identification" como null:
         { "identification": null }
         `;
-        // --- FIM DO NOVO PROMPT ---
-
 
         const completion = await openai.chat.completions.create({
             model: "gpt-4o",
@@ -48,7 +44,7 @@ export default async function handler(request, response) {
                     role: "user",
                     content: [
                         { type: "text", text: promptText },
-                        { type:a: "image_url", image_url: { "url": image } },
+                        { type: "image_url", image_url: { "url": image } },
                     ],
                 },
             ],
