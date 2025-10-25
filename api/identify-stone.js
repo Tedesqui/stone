@@ -1,17 +1,18 @@
-// --- MODIFICADO: Trocado 'import' por 'require' ---
-const { OpenAI } = require('openai');
+// Use este código, que começa com "import"
+import OpenAI from 'openai';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
-// --- MODIFICADO: Trocado 'export default' por 'module.exports' ---
-module.exports = async function handler(request, response) {
+// Este handler agora responde ao endpoint /api/identify-stone
+export default async function handler(request, response) {
     try {
         if (request.method !== 'POST') {
             return response.status(405).json({ error: 'Method Not Allowed' });
         }
 
+        // Recebendo o 'contexto' do frontend
         const { image, contexto } = request.body;
         if (!image) {
             return response.status(400).json({ error: 'A imagem é obrigatória.' });
