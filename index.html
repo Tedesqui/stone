@@ -23,18 +23,28 @@
             text-align: center;
         }
         button#captureBtn {
-            /* MODIFICADO: Cor do botão (de laranja para azul) */
             background-color: #0ba3f5; color: white; padding: 15px 30px; border: none;
             border-radius: 50px; font-size: 18px; font-weight: 700; cursor: pointer;
             transition: all 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
-        /* MODIFICADO: Cor do hover do botão */
         button#captureBtn:hover:not(:disabled) { background-color: #088cd6; transform: translateY(-2px); }
         button:disabled { background: #555; cursor: not-allowed; opacity: 0.7; }
         
-        /* MODIFICADO: Inputs opcionais removidos, não precisamos mais desses estilos */
-        /* #optional-inputs ... */
-        /* .input-group ... */
+        /* --- MODIFICADO: Estilos para o campo de texto RE-ADICIONADOS --- */
+        #optional-inputs { padding: 0 20px 20px 20px; display: flex; justify-content: center; }
+        .input-group { flex: 1; max-width: 400px; }
+        .input-group textarea {
+            width: 100%;
+            padding: 10px; /* Simplificado */
+            border-radius: 8px;
+            border: 1px solid #444;
+            background: #222;
+            color: white;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+            resize: vertical;
+        }
+        /* --- FIM DA MODIFICAÇÃO DE CSS --- */
 
         #output-panel {
             background: #111; padding: 15px; max-height: 85vh; overflow-y: auto;
@@ -42,20 +52,19 @@
         }
         .status-text { text-align: center; padding: 20px; font-size: 1.1em; }
         
-        /* MODIFICADO: de .recipe-card para .stone-card */
         .stone-card {
             background: #1e1e1e; border: 1px solid #444; border-radius: 12px;
             padding: 20px; margin-bottom: 20px;
         }
-        /* MODIFICADO: Cor do título do card */
         .stone-card h2 { margin-top: 0; color: #0ba3f5; } 
         .stone-card h3 { border-bottom: 1px solid #444; padding-bottom: 5px; margin-top: 20px; }
-        /* MODIFICADO: Estilo para os parágrafos de resposta */
         .stone-card p { padding-left: 10px; line-height: 1.6; }
         .stone-card p em { color: #ccc; font-size: 0.9em; }
 
-        /* @media (max-width: 600px) ... (remoção dos estilos dos inputs opcionais) */
-
+        @media (max-width: 600px) {
+            #optional-inputs { flex-direction: column; align-items: center; }
+            .input-group { width: 100%; max-width: none; }
+        }
     </style>
 </head>
 <body>
@@ -65,12 +74,16 @@
         <div id="output-panel" style="display:none;"></div>
         <div id="controls">
             
+            <div id="optional-inputs">
+                <div class="input-group">
+                    <textarea id="contexto" placeholder="Contexto (Opcional): Onde achou? (ex: praia, rio, mina)" rows="1"></textarea>
+                </div>
+            </div>
             <button id="captureBtn">💎 Identificar Pedra</button>
         </div>
     </div>
 
     <script>
-        // O JavaScript foi modificado para a nova funcionalidade
         const video = document.getElementById("video");
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
@@ -101,21 +114,20 @@
             canvas.style.display = 'block';
             controlsDiv.style.display = 'none';
 
-            // MODIFICADO: Texto de carregamento
             outputPanel.innerHTML = `<div class="status-text">🔎 Analisando a pedra...</div>`;
             outputPanel.style.display = 'block';
 
             try {
                 const imageDataUrl = canvas.toDataURL('image/jpeg', 0.85);
                 
-                // MODIFICADO: Inputs de 'restricoes' e 'tipo_culinaria' removidos
+                // --- MODIFICADO: Capturando o valor do novo campo ---
+                const contexto = document.getElementById('contexto').value;
                 
-                // MODIFICADO: Endpoint da API alterado
                 const response = await fetch('/api/identify-stone', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    // MODIFICADO: Corpo da requisição simplificado
-                    body: JSON.stringify({ image: imageDataUrl }),
+                    // --- MODIFICADO: Enviando o 'contexto' para o backend ---
+                    body: JSON.stringify({ image: imageDataUrl, contexto: contexto }),
                 });
 
                 if (!response.ok) {
@@ -123,7 +135,6 @@
                 }
                 const data = await response.json();
                 
-                // MODIFICADO: Chamando a nova função de renderização
                 renderIdentification(data);
 
             } catch (error) {
@@ -132,35 +143,25 @@
             }
         });
 
-        // MODIFICADO: Função de renderização inteiramente nova
         function renderIdentification(data) {
-            // Verificando pela nova estrutura 'identification'
             if (!data.identification) {
-                // MODIFICADO: Mensagem de erro
-                outputPanel.innerHTML = `<div class="status-text">🤔 Não consegui identificar esta pedra. Tente uma foto com melhor iluminação.</div>`;
+                outputPanel.innerHTML = `<div class="status-text">🤔 Não consegui identificar esta pedra. Tente uma foto com melhor iluminação ou adicione um contexto (ex: onde a encontrou).</div>`;
                 setTimeout(resetUI, 4000);
                 return;
             }
 
             const item = data.identification;
-
-            // Criando o novo card de HTML para a pedra
             let html = `
                 <div class="stone-card">
                     <h2>${item.name}</h2>
-                    
                     <h3>Curiosidade</h3>
                     <p>${item.curiosity}</p>
-                    
                     <h3>Valor Estimado</h3>
                     <p>${item.estimated_value}</p>
-
                     <h3>Aviso Importante</h3>
                     <p><em>Este é um valor estimado para <strong>este tipo</strong> de mineral. O valor de uma pedra específica depende de pureza, lapidação, peso e origem, fatores que não podem ser avaliados por uma foto.</em></p>
                 </div>
             `;
-
-            // MODIFICADO: Texto do botão "Tentar Novamente"
             const retryButtonHTML = `<div style="padding: 20px;"><button onclick="resetUI()" id="captureBtn" style="width:100%;">Analisar Outra Pedra</button></div>`;
             outputPanel.innerHTML = html + retryButtonHTML;
         }
