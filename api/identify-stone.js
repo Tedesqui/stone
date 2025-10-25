@@ -1,23 +1,21 @@
-// Use este código, que começa com "import"
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Este handler agora responde ao endpoint /api/identify-stone
 export default async function handler(request, response) {
     try {
         if (request.method !== 'POST') {
             return response.status(405).json({ error: 'Method Not Allowed' });
         }
 
-        // Recebendo o 'contexto' do frontend
         const { image, contexto } = request.body;
         if (!image) {
             return response.status(400).json({ error: 'A imagem é obrigatória.' });
         }
 
+        // --- PROMPT MODIFICADO (A SOLUÇÃO ESTÁ AQUI) ---
         let promptText = `
         Você é um geólogo especialista e avaliador de gemas. Sua tarefa é analisar a imagem fornecida e identificar a pedra ou mineral.
 
@@ -33,9 +31,15 @@ export default async function handler(request, response) {
           }
         }
 
-        Se você não conseguir identificar a pedra, mesmo com o contexto, retorne um JSON com a chave "identification" como null:
-        { "identification": null }
+        // --- NOVAS REGRAS DE IDENTIFICAÇÃO ---
+        Você DEVE sempre tentar uma identificação. NÃO retorne { "identification": null } a menos que a imagem claramente NÃO seja de uma pedra (ex: um cachorro).
+
+        Se a identificação for difícil ou ambígua (devido à qualidade da foto, falta de foco, brilho excessivo, ou se for uma rocha muito genérica), faça o seguinte:
+        1.  Defina o "name" como sua melhor e mais provável suposição (ex: "Quartzo Comum", "Rocha Vulcânica", "Mineral Não Identificado").
+        2.  Use o campo "curiosity" para explicar POR QUE é difícil identificar (ex: "A foto está sem foco, o que impede a análise da textura." ou "Pode ser quartzo ou vidro. Seria necessário um teste de dureza para confirmar." ou "Esta é uma rocha comum, provavelmente granito, mas os cristais não são visíveis.").
+        3.  Defina o "estimated_value" de acordo com sua melhor suposição.
         `;
+        // --- FIM DAS MODIFICAÇÕES DO PROMPT ---
 
         const completion = await openai.chat.completions.create({
             model: "gpt-4o",
